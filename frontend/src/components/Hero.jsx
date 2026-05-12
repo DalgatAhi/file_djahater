@@ -28,7 +28,7 @@ export default function Hero({ onStart }) {
         <div className="inline-flex items-center gap-2 mb-8 animate-fade-up" style={{ animationDelay: '0.1s', opacity: 0 }}>
           <span className="section-label">
             <Sparkles size={12} />
-            Новый способ сжимать изображения
+            Изображения и видео — в одном месте
           </span>
         </div>
 
@@ -48,7 +48,7 @@ export default function Hero({ onStart }) {
           className="text-lg sm:text-xl text-muted max-w-2xl mx-auto leading-relaxed mb-10 animate-fade-up"
           style={{ animationDelay: '0.35s', opacity: 0 }}
         >
-          FileLite помогает уменьшить размер изображений за несколько секунд,
+          FileLite помогает уменьшить размер изображений и видео за несколько секунд,
           сохраняя качество и удобство скачивания.
         </p>
 
@@ -73,10 +73,10 @@ export default function Hero({ onStart }) {
           style={{ animationDelay: '0.65s', opacity: 0 }}
         >
           {[
-            { value: '90%', label: 'Экономия места' },
-            { value: '< 3с', label: 'Время обработки' },
-            { value: '3', label: 'Формата выхода' },
-            { value: '25 МБ', label: 'Макс. размер файла' },
+            { value: '90%',    label: 'Экономия места'      },
+            { value: '< 3с',   label: 'Фото обрабатывается' },
+            { value: '200 МБ', label: 'Макс. размер видео'  },
+            { value: '6',      label: 'Форматов файлов'     },
           ].map(stat => (
             <div key={stat.label} className="text-center">
               <div className="text-2xl font-bold gradient-text-accent">{stat.value}</div>

@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const compressRoute = require('./src/routes/compress');
+const compressVideoRoute = require('./src/routes/compress-video');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -16,7 +17,7 @@ const compressedDir = path.join(__dirname, 'compressed');
 
 app.use(cors({
   origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'DELETE'],
 }));
 
 app.use(express.json());
@@ -26,6 +27,7 @@ app.use('/download', express.static(compressedDir));
 
 // Routes
 app.use('/api', compressRoute);
+app.use('/api', compressVideoRoute);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
