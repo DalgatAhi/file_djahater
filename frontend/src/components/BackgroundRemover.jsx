@@ -67,13 +67,8 @@ export default function BackgroundRemover() {
       const data = await res.json();
 
       if (!res.ok) {
-        const msgs = {
-          UNSUPPORTED_FORMAT: 'Неподдерживаемый формат файла.',
-          FILE_TOO_LARGE:     'Файл превышает 25 МБ.',
-          PROCESS_FAILED:     'Не удалось удалить фон. Попробуйте другое изображение.',
-          SERVER_ERROR:       'Ошибка сервера. Попробуйте ещё раз.',
-        };
-        throw new Error(msgs[data.error] || data.message || 'Неизвестная ошибка');
+        // Prefer server's own message so we see the real cause in the UI
+        throw new Error(data.message || 'Неизвестная ошибка сервера');
       }
 
       setResult(data);
