@@ -9,6 +9,16 @@ const { deleteFile, sweepDirectory } = require('../utils/cleanup');
 
 const compressedDir = path.join(__dirname, '../../compressed');
 
+// multer may decode UTF-8 filenames as Latin-1 on some systems.
+function fixFilename(name) {
+  const hasLatin1High = /[\xC0-\xFF]/.test(name);
+  const hasCyrillic = /[Ѐ-ӿ]/.test(name);
+  if (hasLatin1High && !hasCyrillic) {
+    try { return Buffer.from(name, 'latin1').toString('utf8'); } catch { /* ignore */ }
+  }
+  return name;
+}
+
 // Quality presets mapped to sharp options
 const QUALITY_PRESETS = {
   max: { quality: 50, effort: 6 },
@@ -53,13 +63,14 @@ router.post('/compress', upload.single('file'), async (req, res) => {
     const originalSize = req.file.size;
     const compressedSize = fs.statSync(outputPath).size;
     const savings = Math.round(((originalSize - compressedSize) / originalSize) * 100);
+    const originalName = fixFilename(req.file.originalname);
 
     // Remove the uploaded source immediately after processing
     deleteFile(inputPath);
 
     res.json({
       success: true,
-      originalName: req.file.originalname,
+      originalName,
       originalSize,
       compressedSize,
       savings,

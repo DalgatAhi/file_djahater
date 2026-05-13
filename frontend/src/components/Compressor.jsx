@@ -5,17 +5,25 @@ import Settings from './Settings';
 import Result from './Result';
 import ProgressBar from './ProgressBar';
 import VideoCompressor from './VideoCompressor';
-import { X, ImageIcon } from 'lucide-react';
+import Upscaler from './Upscaler';
+import { X, ImageIcon, Minimize2, Wand2 } from 'lucide-react';
 
 function formatBytes(bytes) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
   return `${(bytes / 1024 / 1024).toFixed(2)} МБ`;
 }
 
+// Top-level section tabs
+const SECTIONS = [
+  { id: 'compress', label: 'Сжатие',           Icon: Minimize2 },
+  { id: 'upscale',  label: 'Улучшение фото',   Icon: Wand2     },
+];
+
 export default function Compressor() {
+  const [section, setSection] = useState('compress');
   const [fileType, setFileType] = useState('image');
 
-  // Image state
+  // Image compressor state
   const [file, setFile]       = useState(null);
   const [preview, setPreview] = useState(null);
   const [mode, setMode]       = useState('balanced');
@@ -25,8 +33,14 @@ export default function Compressor() {
   const [error, setError]     = useState('');
   const previewUrl            = useRef(null);
 
+  const handleSectionChange = (s) => {
+    // Reset image state when switching sections
+    if (previewUrl.current) { URL.revokeObjectURL(previewUrl.current); previewUrl.current = null; }
+    setFile(null); setPreview(null); setResult(null); setError(''); setLoading(false);
+    setSection(s);
+  };
+
   const handleTypeChange = (t) => {
-    // Reset image state when switching tabs
     if (previewUrl.current) { URL.revokeObjectURL(previewUrl.current); previewUrl.current = null; }
     setFile(null); setPreview(null); setResult(null); setError(''); setLoading(false);
     setFileType(t);
@@ -84,94 +98,133 @@ export default function Compressor() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Section header */}
         <div className="text-center mb-8">
-          <span className="section-label mb-4 inline-flex">Загрузка</span>
+          <span className="section-label mb-4 inline-flex">Инструменты</span>
           <h2 className="text-3xl sm:text-4xl font-black text-white">Начни прямо сейчас</h2>
           <p className="text-muted mt-3 max-w-sm mx-auto text-sm">
             Без регистрации, без лимитов на количество файлов.
           </p>
         </div>
 
-        {/* Tab switcher */}
-        <div className="flex justify-center mb-8">
-          <TypeSwitcher type={fileType} setType={handleTypeChange} />
+        {/* Outer section switcher: Сжатие / Улучшение фото */}
+        <div className="flex justify-center mb-6">
+          <div
+            className="inline-flex items-center p-1 rounded-2xl gap-1"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            {SECTIONS.map(({ id, label, Icon }) => {
+              const active = section === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => handleSectionChange(id)}
+                  className={`flex items-center gap-2 py-2.5 px-6 rounded-xl text-sm font-semibold transition-all duration-250
+                    ${active ? 'text-white' : 'text-muted hover:text-white'}`}
+                  style={
+                    active
+                      ? {
+                          background: 'linear-gradient(135deg, #6C5CE7, #5a4bd1)',
+                          boxShadow: '0 4px 20px rgba(108,92,231,0.4)',
+                        }
+                      : {}
+                  }
+                >
+                  <Icon size={15} />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Image compressor */}
-        {fileType === 'image' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left: Upload + Preview */}
-            <div className="glass rounded-3xl p-6 flex flex-col gap-5">
-              {!file ? (
-                <UploadZone onFileSelect={handleFileSelect} error={error} />
-              ) : (
-                <div className="relative group">
-                  <div className="rounded-2xl overflow-hidden bg-black/20 aspect-video flex items-center justify-center relative">
-                    {preview ? (
-                      <img src={preview} alt="Предпросмотр" className="max-h-60 max-w-full object-contain" />
-                    ) : (
-                      <ImageIcon size={48} className="text-muted" />
-                    )}
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center rounded-2xl">
-                      <button
-                        onClick={handleReset}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-                        style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}
-                      >
-                        Изменить файл
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <ImageIcon size={14} className="text-muted shrink-0" />
-                      <span className="text-sm text-white truncate">{file.name}</span>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-xs text-muted">{formatBytes(file.size)}</span>
-                      <button onClick={handleReset} className="text-muted hover:text-red-400 transition-colors">
-                        <X size={15} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {error && !file && (
-                <div className="p-3 rounded-xl text-sm text-red-400"
-                  style={{ background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.2)' }}>
-                  {error}
-                </div>
-              )}
+        {/* ── SECTION: Сжатие ── */}
+        {section === 'compress' && (
+          <>
+            {/* Image / Video sub-switcher */}
+            <div className="flex justify-center mb-8">
+              <TypeSwitcher type={fileType} setType={handleTypeChange} />
             </div>
 
-            {/* Right: Settings or Result */}
-            <div className="glass rounded-3xl p-6">
-              {result ? (
-                <Result result={result} onReset={handleReset} onDownloaded={() => {}} />
-              ) : (
-                <>
-                  <Settings
-                    mode={mode} setMode={setMode}
-                    format={format} setFormat={setFormat}
-                    onCompress={handleCompress}
-                    file={file} loading={loading}
-                  />
-                  {loading && <ProgressBar active={loading} />}
-                  {error && file && (
-                    <div className="mt-4 p-3 rounded-xl text-sm text-red-400"
+            {/* Image compressor */}
+            {fileType === 'image' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left: Upload + Preview */}
+                <div className="glass rounded-3xl p-6 flex flex-col gap-5">
+                  {!file ? (
+                    <UploadZone onFileSelect={handleFileSelect} error={error} />
+                  ) : (
+                    <div className="relative group">
+                      <div className="rounded-2xl overflow-hidden bg-black/20 aspect-video flex items-center justify-center relative">
+                        {preview ? (
+                          <img src={preview} alt="Предпросмотр" className="max-h-60 max-w-full object-contain" />
+                        ) : (
+                          <ImageIcon size={48} className="text-muted" />
+                        )}
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center rounded-2xl">
+                          <button
+                            onClick={handleReset}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+                            style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}
+                          >
+                            Изменить файл
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <ImageIcon size={14} className="text-muted shrink-0" />
+                          <span className="text-sm text-white truncate">{file.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-xs text-muted">{formatBytes(file.size)}</span>
+                          <button onClick={handleReset} className="text-muted hover:text-red-400 transition-colors">
+                            <X size={15} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {error && !file && (
+                    <div className="p-3 rounded-xl text-sm text-red-400"
                       style={{ background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.2)' }}>
                       {error}
                     </div>
                   )}
-                </>
-              )}
-            </div>
-          </div>
+                </div>
+
+                {/* Right: Settings or Result */}
+                <div className="glass rounded-3xl p-6">
+                  {result ? (
+                    <Result result={result} onReset={handleReset} onDownloaded={() => {}} />
+                  ) : (
+                    <>
+                      <Settings
+                        mode={mode} setMode={setMode}
+                        format={format} setFormat={setFormat}
+                        onCompress={handleCompress}
+                        file={file} loading={loading}
+                      />
+                      {loading && <ProgressBar active={loading} />}
+                      {error && file && (
+                        <div className="mt-4 p-3 rounded-xl text-sm text-red-400"
+                          style={{ background: 'rgba(255,80,80,0.08)', border: '1px solid rgba(255,80,80,0.2)' }}>
+                          {error}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Video compressor */}
+            {fileType === 'video' && <VideoCompressor />}
+          </>
         )}
 
-        {/* Video compressor */}
-        {fileType === 'video' && <VideoCompressor />}
+        {/* ── SECTION: Улучшение фото ── */}
+        {section === 'upscale' && <Upscaler />}
       </div>
     </section>
   );

@@ -12,6 +12,16 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 
 const compressedDir = path.join(__dirname, '../../compressed');
 
+// multer may decode UTF-8 filenames as Latin-1 on some systems.
+function fixFilename(name) {
+  const hasLatin1High = /[\xC0-\xFF]/.test(name);
+  const hasCyrillic = /[Ѐ-ӿ]/.test(name);
+  if (hasLatin1High && !hasCyrillic) {
+    try { return Buffer.from(name, 'latin1').toString('utf8'); } catch { /* ignore */ }
+  }
+  return name;
+}
+
 // CRF: lower = better quality, larger file
 // ffmpegPreset: ultrafast→faster→medium→slow (speed vs compression tradeoff)
 const PRESETS = {
@@ -94,7 +104,7 @@ router.post('/compress-video', (req, res, next) => {
       job.status = 'done';
       job.progress = 100;
       job.result = {
-        originalName: req.file.originalname,
+        originalName: fixFilename(req.file.originalname),
         originalSize: req.file.size,
         compressedSize,
         savings: Math.round(((req.file.size - compressedSize) / req.file.size) * 100),

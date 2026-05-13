@@ -5,6 +5,14 @@ function formatBytes(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(2)} МБ`;
 }
 
+function buildResultName(originalName) {
+  const nameWithoutExt = originalName.replace(/\.[^.]+$/, '');
+  const safe = nameWithoutExt
+    .replace(/\s+/g, '_')
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '');
+  return `${safe}_result.mp4`;
+}
+
 export default function VideoResult({ result, onReset }) {
   if (!result) return null;
 
@@ -14,7 +22,7 @@ export default function VideoResult({ result, onReset }) {
   const handleDownload = () => {
     const a = document.createElement('a');
     a.href = downloadUrl;
-    a.download = `filelite_${originalName.replace(/\.[^.]+$/, '')}.mp4`;
+    a.download = buildResultName(originalName);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

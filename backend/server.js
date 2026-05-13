@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const compressRoute = require('./src/routes/compress');
 const compressVideoRoute = require('./src/routes/compress-video');
+const upscaleRoute = require('./src/routes/upscale');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,6 +29,7 @@ app.use('/download', express.static(compressedDir));
 // Routes
 app.use('/api', compressRoute);
 app.use('/api', compressVideoRoute);
+app.use('/api', upscaleRoute);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));

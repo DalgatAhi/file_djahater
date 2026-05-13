@@ -6,6 +6,16 @@ function formatBytes(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(2)} МБ`;
 }
 
+// Builds a safe download filename: «оригинал_result.ext»
+function buildResultName(originalName, format) {
+  const nameWithoutExt = originalName.replace(/\.[^.]+$/, '');
+  const safe = nameWithoutExt
+    .replace(/\s+/g, '_')
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '');
+  const ext = format === 'jpeg' ? 'jpg' : format;
+  return `${safe}_result.${ext}`;
+}
+
 export default function Result({ result, onReset, onDownloaded }) {
   if (!result) return null;
 
@@ -15,7 +25,7 @@ export default function Result({ result, onReset, onDownloaded }) {
     // Trigger file download
     const a = document.createElement('a');
     a.href = downloadUrl;
-    a.download = `filelite_${originalName.replace(/\.[^.]+$/, '')}.${format === 'jpeg' ? 'jpg' : format}`;
+    a.download = buildResultName(originalName, format);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
