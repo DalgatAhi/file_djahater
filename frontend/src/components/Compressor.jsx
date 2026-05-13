@@ -6,7 +6,8 @@ import Result from './Result';
 import ProgressBar from './ProgressBar';
 import VideoCompressor from './VideoCompressor';
 import Upscaler from './Upscaler';
-import { X, ImageIcon, Minimize2, Wand2 } from 'lucide-react';
+import BackgroundRemover from './BackgroundRemover';
+import { X, ImageIcon, Minimize2, Wand2, Eraser } from 'lucide-react';
 
 function formatBytes(bytes) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
@@ -15,8 +16,9 @@ function formatBytes(bytes) {
 
 // Top-level section tabs
 const SECTIONS = [
-  { id: 'compress', label: 'Сжатие',           Icon: Minimize2 },
-  { id: 'upscale',  label: 'Улучшение фото',   Icon: Wand2     },
+  { id: 'compress',  label: 'Сжатие',           Icon: Minimize2 },
+  { id: 'upscale',   label: 'Улучшение фото',   Icon: Wand2     },
+  { id: 'removebg',  label: 'Удаление фона',    Icon: Eraser    },
 ];
 
 export default function Compressor() {
@@ -225,6 +227,9 @@ export default function Compressor() {
 
         {/* ── SECTION: Улучшение фото ── */}
         {section === 'upscale' && <Upscaler />}
+
+        {/* ── SECTION: Удаление фона ── */}
+        {section === 'removebg' && <BackgroundRemover />}
       </div>
     </section>
   );

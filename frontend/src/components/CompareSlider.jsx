@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
-export default function CompareSlider({ beforeSrc, afterSrc }) {
+export default function CompareSlider({ beforeSrc, afterSrc, containerStyle = {} }) {
   const [position, setPosition] = useState(50);
   const containerRef = useRef(null);
   const isDragging = useRef(false);
@@ -42,8 +42,8 @@ export default function CompareSlider({ beforeSrc, afterSrc }) {
   return (
     <div
       ref={containerRef}
-      className="relative select-none overflow-hidden rounded-2xl bg-black/30"
-      style={{ cursor: 'col-resize', touchAction: 'none' }}
+      className="relative select-none overflow-hidden rounded-2xl"
+      style={{ cursor: 'col-resize', touchAction: 'none', background: 'rgba(0,0,0,0.3)', ...containerStyle }}
       onMouseDown={startDrag}
       onTouchStart={startDrag}
     >

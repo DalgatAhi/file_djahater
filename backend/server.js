@@ -5,6 +5,7 @@ const fs = require('fs');
 const compressRoute = require('./src/routes/compress');
 const compressVideoRoute = require('./src/routes/compress-video');
 const upscaleRoute = require('./src/routes/upscale');
+const removeBgRoute = require('./src/routes/remove-background');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -30,6 +31,7 @@ app.use('/download', express.static(compressedDir));
 app.use('/api', compressRoute);
 app.use('/api', compressVideoRoute);
 app.use('/api', upscaleRoute);
+app.use('/api', removeBgRoute);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
