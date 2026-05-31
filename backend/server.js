@@ -18,8 +18,10 @@ const compressedDir = path.join(__dirname, 'compressed');
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
+const isProd = process.env.NODE_ENV === 'production';
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: isProd ? true : ['http://localhost:5173', 'http://127.0.0.1:5173'],
   methods: ['GET', 'POST', 'DELETE'],
 }));
 
@@ -38,6 +40,13 @@ app.use('/api', removeBgRoute);
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-app.listen(PORT, () => {
-  console.log(`FileLite backend running on http://localhost:${PORT}`);
+// Serve built frontend in production
+if (isProd) {
+  const frontendDist = path.join(__dirname, '../frontend/dist');
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res) => res.sendFile(path.join(frontendDist, 'index.html')));
+}
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`FileLite backend running on http://0.0.0.0:${PORT}`);
 });
