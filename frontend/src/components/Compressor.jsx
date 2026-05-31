@@ -5,9 +5,15 @@ import Settings from './Settings';
 import Result from './Result';
 import ProgressBar from './ProgressBar';
 import VideoCompressor from './VideoCompressor';
+import AudioExtractor from './AudioExtractor';
 import Upscaler from './Upscaler';
 import BackgroundRemover from './BackgroundRemover';
-import { X, ImageIcon, Minimize2, Wand2, Eraser } from 'lucide-react';
+import { X, ImageIcon, Minimize2, Wand2, Eraser, Film, Music } from 'lucide-react';
+
+const VIDEO_TABS = [
+  { id: 'compress', label: 'Сжать видео',   Icon: Film  },
+  { id: 'audio',    label: 'Извлечь аудио', Icon: Music },
+];
 
 function formatBytes(bytes) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
@@ -24,6 +30,7 @@ const SECTIONS = [
 export default function Compressor() {
   const [section, setSection] = useState('compress');
   const [fileType, setFileType] = useState('image');
+  const [videoTab, setVideoTab] = useState('compress');
 
   // Image compressor state
   const [file, setFile]       = useState(null);
@@ -46,6 +53,7 @@ export default function Compressor() {
     if (previewUrl.current) { URL.revokeObjectURL(previewUrl.current); previewUrl.current = null; }
     setFile(null); setPreview(null); setResult(null); setError(''); setLoading(false);
     setFileType(t);
+    setVideoTab('compress');
   };
 
   const handleFileSelect = (f) => {
@@ -220,8 +228,48 @@ export default function Compressor() {
               </div>
             )}
 
-            {/* Video compressor */}
-            {fileType === 'video' && <VideoCompressor />}
+            {/* Video section with sub-tabs */}
+            {fileType === 'video' && (
+              <>
+                {/* Video sub-tab switcher */}
+                <div className="flex justify-center mb-6">
+                  <div
+                    className="inline-flex items-center p-1 rounded-2xl gap-1"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  >
+                    {VIDEO_TABS.map(({ id, label, Icon }) => {
+                      const active = videoTab === id;
+                      return (
+                        <button
+                          key={id}
+                          onClick={() => setVideoTab(id)}
+                          className={`flex items-center gap-2 py-2 px-5 rounded-xl text-sm font-semibold transition-all duration-250
+                            ${active ? 'text-white' : 'text-muted hover:text-white'}`}
+                          style={
+                            active
+                              ? {
+                                  background: id === 'audio'
+                                    ? 'linear-gradient(135deg, #00D2FF, #0099cc)'
+                                    : 'linear-gradient(135deg, #6C5CE7, #5a4bd1)',
+                                  boxShadow: id === 'audio'
+                                    ? '0 4px 20px rgba(0,210,255,0.3)'
+                                    : '0 4px 20px rgba(108,92,231,0.4)',
+                                }
+                              : {}
+                          }
+                        >
+                          <Icon size={14} />
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {videoTab === 'compress' && <VideoCompressor />}
+                {videoTab === 'audio'    && <AudioExtractor />}
+              </>
+            )}
           </>
         )}
 
