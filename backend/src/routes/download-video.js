@@ -78,7 +78,9 @@ router.post('/download-video', express.json(), async (req, res) => {
       }
     } catch { /* proceed without info */ }
 
-    const emitter = yt.exec([
+    const isTikTok = /tiktok\.com/i.test(trimmedUrl);
+
+    const args = [
       trimmedUrl,
       '-f', fmt,
       '-o', outputPath,
@@ -86,21 +88,36 @@ router.post('/download-video', express.json(), async (req, res) => {
       '--no-warnings',
       '--newline',
       '--merge-output-format', 'mp4',
-    ]);
+      '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+      '--add-header', 'Accept-Language:en-US,en;q=0.9',
+    ];
+
+    if (isTikTok) {
+      args.push(
+        '--add-header', 'Referer:https://www.tiktok.com/',
+        '--extractor-args', 'tiktok:api_hostname=api22-normal-c-useast2a.tiktokv.com',
+      );
+    }
+
+    const emitter = yt.exec(args);
 
     job.emitter = emitter;
+
+    const stderrLines = [];
 
     emitter.on('ytDlpEvent', (eventType, eventData) => {
       if (eventType === 'download') {
         const match = eventData.match(/(\d+\.?\d*)%/);
         if (match) job.progress = Math.min(Math.round(parseFloat(match[1])), 99);
       }
+      stderrLines.push(eventData);
     });
 
     emitter.on('error', (err) => {
-      console.error('yt-dlp error:', err.message);
+      const fullOutput = [...stderrLines, err.message].join('\n');
+      console.error('yt-dlp error:', fullOutput);
       job.status = 'error';
-      job.error = detectError(err.message);
+      job.error = detectError(fullOutput);
       setTimeout(() => jobs.delete(jobId), 10 * 60 * 1000);
     });
 
@@ -132,11 +149,23 @@ router.post('/download-video', express.json(), async (req, res) => {
 });
 
 function detectError(msg = '') {
-  if (msg.includes('Private') || msg.includes('private'))      return 'Видео приватное или недоступно';
-  if (msg.includes('not available') || msg.includes('removed')) return 'Видео удалено или недоступно в вашем регионе';
-  if (msg.includes('age'))                                      return 'Видео с возрастным ограничением';
-  if (msg.includes('Unsupported URL') || msg.includes('Unable')) return 'Этот сайт не поддерживается';
-  if (msg.includes('network') || msg.includes('connect'))       return 'Ошибка сети. Попробуйте ещё раз.';
+  const m = msg.toLowerCase();
+  if (m.includes('sign in') || m.includes('bot') || m.includes('captcha') || m.includes('403'))
+    return 'TikTok требует авторизацию или заблокировал сервер. Попробуйте другое видео.';
+  if (m.includes('private'))
+    return 'Видео приватное или недоступно';
+  if (m.includes('not available') || m.includes('removed') || m.includes('no longer'))
+    return 'Видео удалено или недоступно в вашем регионе';
+  if (m.includes('age') || m.includes('18+'))
+    return 'Видео с возрастным ограничением';
+  if (m.includes('unsupported url'))
+    return 'Этот сайт не поддерживается';
+  if (m.includes('unable to extract') || m.includes('unable to download'))
+    return 'Не удалось извлечь видео. Возможно, сайт изменил защиту.';
+  if (m.includes('network') || m.includes('connect') || m.includes('timeout'))
+    return 'Ошибка сети. Попробуйте ещё раз.';
+  if (m.includes('http error'))
+    return 'Сервер платформы вернул ошибку. Попробуйте позже.';
   return 'Не удалось скачать видео. Проверьте ссылку.';
 }
 
