@@ -71,23 +71,23 @@ export default function Result({ result, onReset, onDownloaded }) {
       </div>
 
       {/* Size comparison */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        <div className="text-center p-4 rounded-2xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <p className="text-xs text-muted mb-1">До</p>
-          <p className="text-base font-bold text-white">{formatBytes(originalSize)}</p>
+      <div className="grid grid-cols-3 gap-2 mb-5">
+        <div className="text-center p-3 sm:p-4 rounded-2xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <p className="text-[10px] sm:text-xs text-muted mb-1">До</p>
+          <p className="text-sm sm:text-base font-bold text-white">{formatBytes(originalSize)}</p>
         </div>
 
-        <div className="text-center p-4 rounded-2xl flex flex-col items-center justify-center"
+        <div className="text-center p-3 sm:p-4 rounded-2xl flex flex-col items-center justify-center"
           style={{ background: isSmaller ? 'rgba(0,210,80,0.08)' : 'rgba(255,100,100,0.08)', border: `1px solid ${isSmaller ? 'rgba(0,210,80,0.25)' : 'rgba(255,100,100,0.25)'}` }}>
-          <TrendingDown size={16} className={isSmaller ? 'text-green-400' : 'text-red-400'} />
-          <p className={`text-xl font-black mt-1 ${isSmaller ? 'text-green-400' : 'text-red-400'}`}>
+          <TrendingDown size={14} className={isSmaller ? 'text-green-400' : 'text-red-400'} />
+          <p className={`text-lg sm:text-xl font-black mt-0.5 ${isSmaller ? 'text-green-400' : 'text-red-400'}`}>
             {isSmaller ? `-${savings}%` : `+${Math.abs(savings)}%`}
           </p>
         </div>
 
-        <div className="text-center p-4 rounded-2xl" style={{ background: 'rgba(108,92,231,0.1)', border: '1px solid rgba(108,92,231,0.25)' }}>
-          <p className="text-xs text-muted mb-1">После</p>
-          <p className="text-base font-bold text-accent">{formatBytes(compressedSize)}</p>
+        <div className="text-center p-3 sm:p-4 rounded-2xl" style={{ background: 'rgba(108,92,231,0.1)', border: '1px solid rgba(108,92,231,0.25)' }}>
+          <p className="text-[10px] sm:text-xs text-muted mb-1">После</p>
+          <p className="text-sm sm:text-base font-bold text-accent">{formatBytes(compressedSize)}</p>
         </div>
       </div>
 

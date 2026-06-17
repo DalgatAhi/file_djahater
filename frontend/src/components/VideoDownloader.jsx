@@ -132,7 +132,7 @@ export default function VideoDownloader() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="glass rounded-3xl p-8">
+      <div className="glass rounded-3xl p-5 sm:p-8">
 
         {/* Header */}
         <div className="text-center mb-8">
@@ -145,7 +145,7 @@ export default function VideoDownloader() {
         </div>
 
         {/* Supported platforms row */}
-        <div className="flex items-center justify-center gap-3 mb-7">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-7">
           {[
             { label: 'YouTube',   color: '#FF0000', Icon: Youtube   },
             { label: 'TikTok',    color: '#00D2FF', Icon: Music2    },
@@ -363,7 +363,7 @@ function ResultPanel({ result, onReset }) {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="glass rounded-3xl p-8 animate-fade-up" style={{ opacity: 0 }}>
+      <div className="glass rounded-3xl p-5 sm:p-8 animate-fade-up" style={{ opacity: 0 }}>
 
         {/* Success */}
         <div className="flex items-center gap-3 mb-6">

@@ -36,7 +36,7 @@ export default function Settings({ mode, setMode, format, setFormat, onCompress,
       {/* Compression mode */}
       <div>
         <p className="text-sm font-semibold text-white mb-3">Режим сжатия</p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2">
           {MODES.map(m => {
             const Icon = m.icon;
             const selected = mode === m.id;
@@ -44,7 +44,7 @@ export default function Settings({ mode, setMode, format, setFormat, onCompress,
               <button
                 key={m.id}
                 onClick={() => setMode(m.id)}
-                className={`mode-card flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all duration-200 text-center
+                className={`mode-card flex flex-col items-center gap-1.5 p-3 sm:p-4 rounded-2xl border transition-all duration-200 text-center
                   ${selected
                     ? 'selected'
                     : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.07] hover:border-white/20'

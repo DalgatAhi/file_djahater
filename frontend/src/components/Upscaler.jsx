@@ -123,7 +123,7 @@ export default function Upscaler() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Left: Upload zone or preview */}
-        <div className="glass rounded-3xl p-6 flex flex-col gap-5">
+        <div className="glass rounded-3xl p-4 sm:p-6 flex flex-col gap-5">
           {!file ? (
             <UploadZone onFileSelect={handleFileSelect} error={error} />
           ) : (
@@ -169,7 +169,7 @@ export default function Upscaler() {
         </div>
 
         {/* Right: Settings or result info */}
-        <div className="glass rounded-3xl p-6">
+        <div className="glass rounded-3xl p-4 sm:p-6">
           {result ? (
             /* Result info card */
             <div>
@@ -341,7 +341,7 @@ export default function Upscaler() {
 
       {/* Compare slider — appears after upscaling */}
       {result && preview && (
-        <div className="glass rounded-3xl p-6">
+        <div className="glass rounded-3xl p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-4">
             <span className="text-sm font-semibold text-white">Сравнение До / После</span>
             <span className="text-xs text-muted ml-auto">Перетащи разделитель</span>

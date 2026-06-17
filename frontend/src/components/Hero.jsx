@@ -69,7 +69,7 @@ export default function Hero({ onStart }) {
 
         {/* Stats bar */}
         <div
-          className="glass rounded-2xl px-8 py-5 inline-flex flex-wrap justify-center gap-8 sm:gap-12 animate-fade-up"
+          className="glass rounded-2xl px-4 sm:px-8 py-4 sm:py-5 inline-flex flex-wrap justify-center gap-5 sm:gap-10 animate-fade-up w-full sm:w-auto"
           style={{ animationDelay: '0.65s', opacity: 0 }}
         >
           {[

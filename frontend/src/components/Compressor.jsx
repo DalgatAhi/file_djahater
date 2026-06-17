@@ -117,10 +117,10 @@ export default function Compressor() {
           </p>
         </div>
 
-        {/* Outer section switcher: Сжатие / Улучшение фото */}
-        <div className="flex justify-center mb-6">
+        {/* Outer section switcher */}
+        <div className="flex justify-center mb-6 px-1">
           <div
-            className="inline-flex items-center p-1 rounded-2xl gap-1"
+            className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 rounded-2xl w-full sm:w-auto"
             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
           >
             {SECTIONS.map(({ id, label, Icon, badge }) => {
@@ -129,7 +129,7 @@ export default function Compressor() {
                 <button
                   key={id}
                   onClick={() => handleSectionChange(id)}
-                  className={`relative flex items-center gap-2 py-2.5 px-6 rounded-xl text-sm font-semibold transition-all duration-250
+                  className={`relative flex items-center justify-center gap-1.5 py-2.5 px-3 sm:px-5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-250
                     ${active ? 'text-white' : 'text-muted hover:text-white'}`}
                   style={
                     active
@@ -140,11 +140,11 @@ export default function Compressor() {
                       : {}
                   }
                 >
-                  <Icon size={15} />
-                  {label}
+                  <Icon size={14} />
+                  <span className="truncate">{label}</span>
                   {badge && (
                     <span
-                      className="absolute -top-2 -right-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide leading-none"
+                      className="absolute -top-2 -right-1 px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wide leading-none hidden sm:block"
                       style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.4)' }}
                     >
                       {badge}
