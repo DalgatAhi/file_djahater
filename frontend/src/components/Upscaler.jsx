@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import UploadZone from './UploadZone';
 import CompareSlider from './CompareSlider';
 import {
@@ -38,12 +38,26 @@ export default function Upscaler() {
   const [scale, setScale]         = useState(2);
   const [mode, setMode]           = useState('balance');
   const [loading, setLoading]     = useState(false);
-  const [saving, setSaving]       = useState(false);
+  const [shareFile, setShareFile] = useState(null);
   const [result, setResult]       = useState(null);
   const [error, setError]         = useState('');
 
   const previewUrlRef = useRef(null);
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  // Pre-fetch blob when result appears so share() is synchronous on tap
+  useEffect(() => {
+    if (!result || !isIOS) return;
+    setShareFile(null);
+    const dlFilename = buildResultName(result.originalName, result.format);
+    fetch(result.downloadUrl)
+      .then(r => r.blob())
+      .then(blob => {
+        const file = new File([blob], dlFilename, { type: 'image/webp' });
+        if (navigator.canShare?.({ files: [file] })) setShareFile(file);
+      })
+      .catch(() => {});
+  }, [result]);
 
   const handleFileSelect = useCallback((f) => {
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
@@ -97,27 +111,20 @@ export default function Upscaler() {
     }
   };
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     if (!result) return;
     const filename = result.downloadUrl.split('/').pop();
     const dlFilename = buildResultName(result.originalName, result.format);
     const cleanup = () => setTimeout(() => fetch(`/api/file/${filename}`, { method: 'DELETE' }).catch(() => {}), 2000);
 
+    if (isIOS && shareFile) {
+      navigator.share({ files: [shareFile] })
+        .then(cleanup)
+        .catch(e => { if (e.name !== 'AbortError') { window.open(result.downloadUrl, '_blank'); cleanup(); } });
+      return;
+    }
+
     if (isIOS) {
-      setSaving(true);
-      try {
-        const blob = await fetch(result.downloadUrl).then(r => r.blob());
-        const shareFile = new File([blob], dlFilename, { type: 'image/webp' });
-        if (navigator.canShare?.({ files: [shareFile] })) {
-          await navigator.share({ files: [shareFile] });
-          cleanup();
-          return;
-        }
-      } catch (e) {
-        if (e.name === 'AbortError') return;
-      } finally {
-        setSaving(false);
-      }
       window.open(result.downloadUrl, '_blank');
       cleanup();
       return;
@@ -228,11 +235,10 @@ export default function Upscaler() {
               <div className="flex gap-3">
                 <button
                   onClick={handleDownload}
-                  disabled={saving}
                   className="btn-primary flex-1 justify-center py-3.5 rounded-2xl text-sm"
                 >
-                  {saving ? <Loader2 size={17} className="animate-spin" /> : <Download size={17} />}
-                  {saving ? 'Подготовка...' : 'Скачать улучшенное фото'}
+                  <Download size={17} />
+                  Скачать улучшенное фото
                 </button>
                 <button
                   onClick={handleReset}

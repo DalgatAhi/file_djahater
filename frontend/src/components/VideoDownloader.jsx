@@ -337,32 +337,37 @@ function DownloadProgress({ progress }) {
 // ── Result ────────────────────────────────────────────────────────────────────
 
 function ResultPanel({ result, onReset }) {
-  const [saving, setSaving] = useState(false);
+  const [shareFile, setShareFile] = useState(null);
   const { title, fileSize, downloadUrl, quality } = result;
   const qualityLabel = { best: 'Лучшее качество', '720p': '720p HD', '480p': '480p' }[quality] || quality;
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const safeTitle = (title || 'video').replace(/[<>:"/\\|?*\x00-\x1F]/g, '').replace(/\s+/g, '_').slice(0, 80);
   const dlFilename = `${safeTitle}.mp4`;
 
-  const handleDownload = async () => {
+  // Pre-fetch video blob so share() is synchronous on tap
+  useEffect(() => {
+    if (!isIOS) return;
+    fetch(downloadUrl)
+      .then(r => r.blob())
+      .then(blob => {
+        const file = new File([blob], dlFilename, { type: 'video/mp4' });
+        if (navigator.canShare?.({ files: [file] })) setShareFile(file);
+      })
+      .catch(() => {});
+  }, [downloadUrl]);
+
+  const handleDownload = () => {
     const filename = downloadUrl.split('/').pop();
     const cleanup = () => setTimeout(() => fetch(`/api/file/${filename}`, { method: 'DELETE' }).catch(() => {}), 2000);
 
+    if (isIOS && shareFile) {
+      navigator.share({ files: [shareFile] })
+        .then(cleanup)
+        .catch(e => { if (e.name !== 'AbortError') { window.open(downloadUrl, '_blank'); cleanup(); } });
+      return;
+    }
+
     if (isIOS) {
-      setSaving(true);
-      try {
-        const blob = await fetch(downloadUrl).then(r => r.blob());
-        const shareFile = new File([blob], dlFilename, { type: 'video/mp4' });
-        if (navigator.canShare?.({ files: [shareFile] })) {
-          await navigator.share({ files: [shareFile] });
-          cleanup();
-          return;
-        }
-      } catch (e) {
-        if (e.name === 'AbortError') return;
-      } finally {
-        setSaving(false);
-      }
       window.open(downloadUrl, '_blank');
       cleanup();
       return;
@@ -417,11 +422,10 @@ function ResultPanel({ result, onReset }) {
         <div className="flex gap-3">
           <button
             onClick={handleDownload}
-            disabled={saving}
             className="btn-primary flex-1 justify-center py-4 rounded-2xl text-sm"
           >
-            {saving ? <Loader2 size={17} className="animate-spin" /> : <Download size={17} />}
-            {saving ? 'Подготовка...' : 'Скачать MP4'}
+            <Download size={17} />
+            Скачать MP4
           </button>
           <button onClick={onReset} className="btn-secondary px-4 rounded-2xl" title="Скачать другое видео">
             <RefreshCw size={17} />

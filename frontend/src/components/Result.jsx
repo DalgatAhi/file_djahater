@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Download, CheckCircle2, TrendingDown, File, RefreshCw, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Download, CheckCircle2, TrendingDown, File, RefreshCw } from 'lucide-react';
 
 function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} Б`;
@@ -7,7 +7,6 @@ function formatBytes(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(2)} МБ`;
 }
 
-// Builds a safe download filename: «оригинал_result.ext»
 function buildResultName(originalName, format) {
   const nameWithoutExt = originalName.replace(/\.[^.]+$/, '');
   const safe = nameWithoutExt
@@ -18,16 +17,33 @@ function buildResultName(originalName, format) {
 }
 
 const MIME_MAP = { webp: 'image/webp', jpeg: 'image/jpeg', jpg: 'image/jpeg', png: 'image/png' };
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
 export default function Result({ result, onReset, onDownloaded }) {
-  const [saving, setSaving] = useState(false);
+  const [shareFile, setShareFile] = useState(null);
+
+  // Pre-fetch blob in background so share() can be called synchronously on tap
+  useEffect(() => {
+    if (!result || !isIOS) return;
+    setShareFile(null);
+    const { downloadUrl, originalName, format } = result;
+    const dlFilename = buildResultName(originalName, format);
+    const mimeType = MIME_MAP[format] || 'image/jpeg';
+    fetch(downloadUrl)
+      .then(r => r.blob())
+      .then(blob => {
+        const file = new File([blob], dlFilename, { type: mimeType });
+        if (navigator.canShare?.({ files: [file] })) setShareFile(file);
+      })
+      .catch(() => {});
+  }, [result]);
 
   if (!result) return null;
 
   const { originalName, originalSize, compressedSize, savings, format, downloadUrl } = result;
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isSmaller = compressedSize < originalSize;
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     const filename = downloadUrl.split('/').pop();
     const dlFilename = buildResultName(originalName, format);
     const cleanup = () => setTimeout(() => {
@@ -35,21 +51,15 @@ export default function Result({ result, onReset, onDownloaded }) {
       onDownloaded?.();
     }, 2000);
 
+    if (isIOS && shareFile) {
+      // Called synchronously from tap handler — iOS preserves the user gesture
+      navigator.share({ files: [shareFile] })
+        .then(cleanup)
+        .catch(e => { if (e.name !== 'AbortError') { window.open(downloadUrl, '_blank'); cleanup(); } });
+      return;
+    }
+
     if (isIOS) {
-      setSaving(true);
-      try {
-        const blob = await fetch(downloadUrl).then(r => r.blob());
-        const shareFile = new File([blob], dlFilename, { type: MIME_MAP[format] || blob.type });
-        if (navigator.canShare?.({ files: [shareFile] })) {
-          await navigator.share({ files: [shareFile] });
-          cleanup();
-          return;
-        }
-      } catch (e) {
-        if (e.name === 'AbortError') return;
-      } finally {
-        setSaving(false);
-      }
       window.open(downloadUrl, '_blank');
       cleanup();
       return;
@@ -63,8 +73,6 @@ export default function Result({ result, onReset, onDownloaded }) {
     document.body.removeChild(a);
     cleanup();
   };
-
-  const isSmaller = compressedSize < originalSize;
 
   return (
     <div className="animate-fade-up" style={{ opacity: 0 }}>
@@ -96,7 +104,6 @@ export default function Result({ result, onReset, onDownloaded }) {
           <p className="text-[10px] sm:text-xs text-muted mb-1">До</p>
           <p className="text-sm sm:text-base font-bold text-white">{formatBytes(originalSize)}</p>
         </div>
-
         <div className="text-center p-3 sm:p-4 rounded-2xl flex flex-col items-center justify-center"
           style={{ background: isSmaller ? 'rgba(0,210,80,0.08)' : 'rgba(255,100,100,0.08)', border: `1px solid ${isSmaller ? 'rgba(0,210,80,0.25)' : 'rgba(255,100,100,0.25)'}` }}>
           <TrendingDown size={14} className={isSmaller ? 'text-green-400' : 'text-red-400'} />
@@ -104,7 +111,6 @@ export default function Result({ result, onReset, onDownloaded }) {
             {isSmaller ? `-${savings}%` : `+${Math.abs(savings)}%`}
           </p>
         </div>
-
         <div className="text-center p-3 sm:p-4 rounded-2xl" style={{ background: 'rgba(108,92,231,0.1)', border: '1px solid rgba(108,92,231,0.25)' }}>
           <p className="text-[10px] sm:text-xs text-muted mb-1">После</p>
           <p className="text-sm sm:text-base font-bold text-accent">{formatBytes(compressedSize)}</p>
@@ -132,17 +138,12 @@ export default function Result({ result, onReset, onDownloaded }) {
       <div className="flex gap-3">
         <button
           onClick={handleDownload}
-          disabled={saving}
           className="btn-primary flex-1 justify-center py-3.5 rounded-2xl text-sm"
         >
-          {saving ? <Loader2 size={17} className="animate-spin" /> : <Download size={17} />}
-          {saving ? 'Подготовка...' : 'Скачать файл'}
+          <Download size={17} />
+          Скачать файл
         </button>
-        <button
-          onClick={onReset}
-          className="btn-secondary px-4 rounded-2xl"
-          title="Сжать другой файл"
-        >
+        <button onClick={onReset} className="btn-secondary px-4 rounded-2xl" title="Сжать другой файл">
           <RefreshCw size={17} />
         </button>
       </div>
