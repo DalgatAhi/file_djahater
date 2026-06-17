@@ -22,19 +22,16 @@ const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 export default function Result({ result, onReset, onDownloaded }) {
   const [shareFile, setShareFile] = useState(null);
 
-  // Pre-fetch blob in background so share() can be called synchronously on tap
+  // Pre-fetch blob in background so share() is called synchronously on tap
   useEffect(() => {
-    if (!result || !isIOS) return;
+    if (!result || !isIOS || !navigator.share) return;
     setShareFile(null);
     const { downloadUrl, originalName, format } = result;
     const dlFilename = buildResultName(originalName, format);
     const mimeType = MIME_MAP[format] || 'image/jpeg';
     fetch(downloadUrl)
       .then(r => r.blob())
-      .then(blob => {
-        const file = new File([blob], dlFilename, { type: mimeType });
-        if (navigator.canShare?.({ files: [file] })) setShareFile(file);
-      })
+      .then(blob => setShareFile(new File([blob], dlFilename, { type: mimeType })))
       .catch(() => {});
   }, [result]);
 
@@ -51,15 +48,16 @@ export default function Result({ result, onReset, onDownloaded }) {
       onDownloaded?.();
     }, 2000);
 
-    if (isIOS && shareFile) {
-      // Called synchronously from tap handler — iOS preserves the user gesture
-      navigator.share({ files: [shareFile] })
-        .then(cleanup)
-        .catch(e => { if (e.name !== 'AbortError') { window.open(downloadUrl, '_blank'); cleanup(); } });
-      return;
-    }
-
-    if (isIOS) {
+    if (isIOS && navigator.share) {
+      if (shareFile) {
+        try {
+          // Synchronous start — iOS preserves user gesture (no await before this)
+          navigator.share({ files: [shareFile] })
+            .then(cleanup)
+            .catch(e => { if (e.name !== 'AbortError') { window.open(downloadUrl, '_blank'); cleanup(); } });
+          return;
+        } catch { /* file type not supported, fall through */ }
+      }
       window.open(downloadUrl, '_blank');
       cleanup();
       return;

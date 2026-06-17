@@ -47,15 +47,12 @@ export default function Upscaler() {
 
   // Pre-fetch blob when result appears so share() is synchronous on tap
   useEffect(() => {
-    if (!result || !isIOS) return;
+    if (!result || !isIOS || !navigator.share) return;
     setShareFile(null);
     const dlFilename = buildResultName(result.originalName, result.format);
     fetch(result.downloadUrl)
       .then(r => r.blob())
-      .then(blob => {
-        const file = new File([blob], dlFilename, { type: 'image/webp' });
-        if (navigator.canShare?.({ files: [file] })) setShareFile(file);
-      })
+      .then(blob => setShareFile(new File([blob], dlFilename, { type: 'image/webp' })))
       .catch(() => {});
   }, [result]);
 
@@ -117,14 +114,15 @@ export default function Upscaler() {
     const dlFilename = buildResultName(result.originalName, result.format);
     const cleanup = () => setTimeout(() => fetch(`/api/file/${filename}`, { method: 'DELETE' }).catch(() => {}), 2000);
 
-    if (isIOS && shareFile) {
-      navigator.share({ files: [shareFile] })
-        .then(cleanup)
-        .catch(e => { if (e.name !== 'AbortError') { window.open(result.downloadUrl, '_blank'); cleanup(); } });
-      return;
-    }
-
-    if (isIOS) {
+    if (isIOS && navigator.share) {
+      if (shareFile) {
+        try {
+          navigator.share({ files: [shareFile] })
+            .then(cleanup)
+            .catch(e => { if (e.name !== 'AbortError') { window.open(result.downloadUrl, '_blank'); cleanup(); } });
+          return;
+        } catch { /* fall through */ }
+      }
       window.open(result.downloadUrl, '_blank');
       cleanup();
       return;

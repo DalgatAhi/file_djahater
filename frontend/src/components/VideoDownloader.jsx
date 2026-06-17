@@ -346,13 +346,10 @@ function ResultPanel({ result, onReset }) {
 
   // Pre-fetch video blob so share() is synchronous on tap
   useEffect(() => {
-    if (!isIOS) return;
+    if (!isIOS || !navigator.share) return;
     fetch(downloadUrl)
       .then(r => r.blob())
-      .then(blob => {
-        const file = new File([blob], dlFilename, { type: 'video/mp4' });
-        if (navigator.canShare?.({ files: [file] })) setShareFile(file);
-      })
+      .then(blob => setShareFile(new File([blob], dlFilename, { type: 'video/mp4' })))
       .catch(() => {});
   }, [downloadUrl]);
 
@@ -360,14 +357,15 @@ function ResultPanel({ result, onReset }) {
     const filename = downloadUrl.split('/').pop();
     const cleanup = () => setTimeout(() => fetch(`/api/file/${filename}`, { method: 'DELETE' }).catch(() => {}), 2000);
 
-    if (isIOS && shareFile) {
-      navigator.share({ files: [shareFile] })
-        .then(cleanup)
-        .catch(e => { if (e.name !== 'AbortError') { window.open(downloadUrl, '_blank'); cleanup(); } });
-      return;
-    }
-
-    if (isIOS) {
+    if (isIOS && navigator.share) {
+      if (shareFile) {
+        try {
+          navigator.share({ files: [shareFile] })
+            .then(cleanup)
+            .catch(e => { if (e.name !== 'AbortError') { window.open(downloadUrl, '_blank'); cleanup(); } });
+          return;
+        } catch { /* fall through */ }
+      }
       window.open(downloadUrl, '_blank');
       cleanup();
       return;
