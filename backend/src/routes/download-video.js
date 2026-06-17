@@ -2,12 +2,25 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { v4: uuidv4 } = require('uuid');
 const YTDlpWrap = require('yt-dlp-wrap').default;
 const { sweepDirectory } = require('../utils/cleanup');
 
 const compressedDir = path.join(__dirname, '../../compressed');
 const ytDlpBinary = path.join(__dirname, '../../yt-dlp');
+
+// Write YouTube cookies from env var to temp file once at startup
+const COOKIES_PATH = path.join(os.tmpdir(), 'yt-cookies.txt');
+if (process.env.YOUTUBE_COOKIES) {
+  try {
+    const decoded = Buffer.from(process.env.YOUTUBE_COOKIES, 'base64').toString('utf8');
+    fs.writeFileSync(COOKIES_PATH, decoded, 'utf8');
+    console.log('YouTube cookies loaded from env');
+  } catch (e) {
+    console.error('Failed to write YouTube cookies:', e.message);
+  }
+}
 
 let ytDlp = null;
 
@@ -78,7 +91,8 @@ router.post('/download-video', express.json(), async (req, res) => {
       }
     } catch { /* proceed without info */ }
 
-    const isTikTok = /tiktok\.com/i.test(trimmedUrl);
+    const isTikTok   = /tiktok\.com/i.test(trimmedUrl);
+    const isYouTube  = /youtube\.com|youtu\.be/i.test(trimmedUrl);
 
     const args = [
       trimmedUrl,
@@ -100,6 +114,15 @@ router.post('/download-video', express.json(), async (req, res) => {
       );
     }
 
+    if (isYouTube) {
+      // iOS client bypasses datacenter IP blocks that affect the default web client
+      args.push('--extractor-args', 'youtube:player_client=ios,mweb,web');
+      // Use cookies if provided via YOUTUBE_COOKIES env var (base64-encoded Netscape cookies)
+      if (fs.existsSync(COOKIES_PATH)) {
+        args.push('--cookies', COOKIES_PATH);
+      }
+    }
+
     const emitter = yt.exec(args);
 
     job.emitter = emitter;
@@ -118,7 +141,7 @@ router.post('/download-video', express.json(), async (req, res) => {
       const fullOutput = [...stderrLines, err.message].join('\n');
       console.error('yt-dlp error:', fullOutput);
       job.status = 'error';
-      job.error = detectError(fullOutput);
+      job.error = detectError(fullOutput, trimmedUrl);
       setTimeout(() => jobs.delete(jobId), 10 * 60 * 1000);
     });
 
@@ -144,15 +167,23 @@ router.post('/download-video', express.json(), async (req, res) => {
   } catch (err) {
     console.error('Download error:', err.message);
     job.status = 'error';
-    job.error = detectError(err.message);
+    job.error = detectError(err.message, trimmedUrl);
     setTimeout(() => jobs.delete(jobId), 10 * 60 * 1000);
   }
 });
 
-function detectError(msg = '') {
+function detectError(msg = '', url = '') {
   const m = msg.toLowerCase();
-  if (m.includes('sign in') || m.includes('bot') || m.includes('captcha') || m.includes('403'))
-    return 'Доступ заблокирован или требуется авторизация. Попробуйте другое видео.';
+  const isYT = /youtube\.com|youtu\.be/i.test(url);
+
+  if (m.includes('sign in') || m.includes('bot') || m.includes('captcha') || m.includes('confirm your age'))
+    return isYT
+      ? 'YouTube заблокировал запрос с сервера. Попробуйте добавить cookies через переменную YOUTUBE_COOKIES в Railway.'
+      : 'Доступ заблокирован или требуется авторизация. Попробуйте другое видео.';
+  if (m.includes('403'))
+    return isYT
+      ? 'YouTube вернул ошибку 403 (блокировка по IP сервера). Попробуйте другое качество или добавьте cookies.'
+      : 'Сервер платформы запретил доступ (403). Попробуйте позже.';
   if (m.includes('private'))
     return 'Видео приватное или недоступно';
   if (m.includes('not available') || m.includes('removed') || m.includes('no longer'))
