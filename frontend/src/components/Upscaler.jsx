@@ -38,10 +38,12 @@ export default function Upscaler() {
   const [scale, setScale]         = useState(2);
   const [mode, setMode]           = useState('balance');
   const [loading, setLoading]     = useState(false);
+  const [saving, setSaving]       = useState(false);
   const [result, setResult]       = useState(null);
   const [error, setError]         = useState('');
 
   const previewUrlRef = useRef(null);
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
   const handleFileSelect = useCallback((f) => {
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
@@ -95,26 +97,39 @@ export default function Upscaler() {
     }
   };
 
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!result) return;
     const filename = result.downloadUrl.split('/').pop();
+    const dlFilename = buildResultName(result.originalName, result.format);
+    const cleanup = () => setTimeout(() => fetch(`/api/file/${filename}`, { method: 'DELETE' }).catch(() => {}), 2000);
 
     if (isIOS) {
+      setSaving(true);
+      try {
+        const blob = await fetch(result.downloadUrl).then(r => r.blob());
+        const shareFile = new File([blob], dlFilename, { type: 'image/webp' });
+        if (navigator.canShare?.({ files: [shareFile] })) {
+          await navigator.share({ files: [shareFile] });
+          cleanup();
+          return;
+        }
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+      } finally {
+        setSaving(false);
+      }
       window.open(result.downloadUrl, '_blank');
-    } else {
-      const a = document.createElement('a');
-      a.href = result.downloadUrl;
-      a.download = buildResultName(result.originalName, result.format);
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      cleanup();
+      return;
     }
 
-    setTimeout(() => {
-      fetch(`/api/file/${filename}`, { method: 'DELETE' }).catch(() => {});
-    }, 2000);
+    const a = document.createElement('a');
+    a.href = result.downloadUrl;
+    a.download = dlFilename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    cleanup();
   };
 
   return (
@@ -213,10 +228,11 @@ export default function Upscaler() {
               <div className="flex gap-3">
                 <button
                   onClick={handleDownload}
+                  disabled={saving}
                   className="btn-primary flex-1 justify-center py-3.5 rounded-2xl text-sm"
                 >
-                  <Download size={17} />
-                  Скачать улучшенное фото
+                  {saving ? <Loader2 size={17} className="animate-spin" /> : <Download size={17} />}
+                  {saving ? 'Подготовка...' : 'Скачать улучшенное фото'}
                 </button>
                 <button
                   onClick={handleReset}
@@ -226,11 +242,6 @@ export default function Upscaler() {
                   <RefreshCw size={17} />
                 </button>
               </div>
-              {isIOS && (
-                <p className="text-center text-[11px] mt-3" style={{ color: '#A7B0C0' }}>
-                  Нажми и удержи изображение → «Добавить в Фото»
-                </p>
-              )}
             </div>
           ) : (
             /* Settings panel */

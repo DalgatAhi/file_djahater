@@ -337,28 +337,44 @@ function DownloadProgress({ progress }) {
 // ── Result ────────────────────────────────────────────────────────────────────
 
 function ResultPanel({ result, onReset }) {
+  const [saving, setSaving] = useState(false);
   const { title, fileSize, downloadUrl, quality } = result;
   const qualityLabel = { best: 'Лучшее качество', '720p': '720p HD', '480p': '480p' }[quality] || quality;
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const safeTitle = (title || 'video').replace(/[<>:"/\\|?*\x00-\x1F]/g, '').replace(/\s+/g, '_').slice(0, 80);
+  const dlFilename = `${safeTitle}.mp4`;
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const filename = downloadUrl.split('/').pop();
+    const cleanup = () => setTimeout(() => fetch(`/api/file/${filename}`, { method: 'DELETE' }).catch(() => {}), 2000);
 
     if (isIOS) {
+      setSaving(true);
+      try {
+        const blob = await fetch(downloadUrl).then(r => r.blob());
+        const shareFile = new File([blob], dlFilename, { type: 'video/mp4' });
+        if (navigator.canShare?.({ files: [shareFile] })) {
+          await navigator.share({ files: [shareFile] });
+          cleanup();
+          return;
+        }
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+      } finally {
+        setSaving(false);
+      }
       window.open(downloadUrl, '_blank');
-    } else {
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      const safe = (title || 'video').replace(/[<>:"/\\|?*\x00-\x1F]/g, '').replace(/\s+/g, '_').slice(0, 80);
-      a.download = `${safe}.mp4`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      cleanup();
+      return;
     }
 
-    setTimeout(() => {
-      fetch(`/api/file/${filename}`, { method: 'DELETE' }).catch(() => {});
-    }, 2000);
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = dlFilename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    cleanup();
   };
 
   return (
@@ -401,20 +417,16 @@ function ResultPanel({ result, onReset }) {
         <div className="flex gap-3">
           <button
             onClick={handleDownload}
+            disabled={saving}
             className="btn-primary flex-1 justify-center py-4 rounded-2xl text-sm"
           >
-            <Download size={17} />
-            Скачать MP4
+            {saving ? <Loader2 size={17} className="animate-spin" /> : <Download size={17} />}
+            {saving ? 'Подготовка...' : 'Скачать MP4'}
           </button>
           <button onClick={onReset} className="btn-secondary px-4 rounded-2xl" title="Скачать другое видео">
             <RefreshCw size={17} />
           </button>
         </div>
-        {isIOS && (
-          <p className="text-center text-[11px] mt-3" style={{ color: '#A7B0C0' }}>
-            Нажми и удержи видео → «Сохранить в Фото»
-          </p>
-        )}
       </div>
     </div>
   );

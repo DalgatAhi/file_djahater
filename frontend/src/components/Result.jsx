@@ -1,4 +1,5 @@
-import { Download, CheckCircle2, TrendingDown, File, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import { Download, CheckCircle2, TrendingDown, File, RefreshCw, Loader2 } from 'lucide-react';
 
 function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} Б`;
@@ -16,32 +17,51 @@ function buildResultName(originalName, format) {
   return `${safe}_result.${ext}`;
 }
 
+const MIME_MAP = { webp: 'image/webp', jpeg: 'image/jpeg', jpg: 'image/jpeg', png: 'image/png' };
+
 export default function Result({ result, onReset, onDownloaded }) {
+  const [saving, setSaving] = useState(false);
+
   if (!result) return null;
 
   const { originalName, originalSize, compressedSize, savings, format, downloadUrl } = result;
-
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
   const handleDownload = async () => {
     const filename = downloadUrl.split('/').pop();
-
-    if (isIOS) {
-      // iOS: open in new tab so user can long-press → Save to Photos
-      window.open(downloadUrl, '_blank');
-    } else {
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = buildResultName(originalName, format);
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-
-    setTimeout(() => {
+    const dlFilename = buildResultName(originalName, format);
+    const cleanup = () => setTimeout(() => {
       fetch(`/api/file/${filename}`, { method: 'DELETE' }).catch(() => {});
       onDownloaded?.();
     }, 2000);
+
+    if (isIOS) {
+      setSaving(true);
+      try {
+        const blob = await fetch(downloadUrl).then(r => r.blob());
+        const shareFile = new File([blob], dlFilename, { type: MIME_MAP[format] || blob.type });
+        if (navigator.canShare?.({ files: [shareFile] })) {
+          await navigator.share({ files: [shareFile] });
+          cleanup();
+          return;
+        }
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+      } finally {
+        setSaving(false);
+      }
+      window.open(downloadUrl, '_blank');
+      cleanup();
+      return;
+    }
+
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = dlFilename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    cleanup();
   };
 
   const isSmaller = compressedSize < originalSize;
@@ -112,10 +132,11 @@ export default function Result({ result, onReset, onDownloaded }) {
       <div className="flex gap-3">
         <button
           onClick={handleDownload}
+          disabled={saving}
           className="btn-primary flex-1 justify-center py-3.5 rounded-2xl text-sm"
         >
-          <Download size={17} />
-          Скачать файл
+          {saving ? <Loader2 size={17} className="animate-spin" /> : <Download size={17} />}
+          {saving ? 'Подготовка...' : 'Скачать файл'}
         </button>
         <button
           onClick={onReset}
@@ -125,11 +146,6 @@ export default function Result({ result, onReset, onDownloaded }) {
           <RefreshCw size={17} />
         </button>
       </div>
-      {isIOS && (
-        <p className="text-center text-[11px] mt-3" style={{ color: '#A7B0C0' }}>
-          Нажми и удержи изображение → «Добавить в Фото»
-        </p>
-      )}
     </div>
   );
 }

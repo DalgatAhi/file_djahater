@@ -152,7 +152,7 @@ router.post('/download-video', express.json(), async (req, res) => {
 function detectError(msg = '') {
   const m = msg.toLowerCase();
   if (m.includes('sign in') || m.includes('bot') || m.includes('captcha') || m.includes('403'))
-    return 'TikTok требует авторизацию или заблокировал сервер. Попробуйте другое видео.';
+    return 'Доступ заблокирован или требуется авторизация. Попробуйте другое видео.';
   if (m.includes('private'))
     return 'Видео приватное или недоступно';
   if (m.includes('not available') || m.includes('removed') || m.includes('no longer'))
