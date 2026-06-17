@@ -95,17 +95,24 @@ export default function Upscaler() {
     }
   };
 
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
   const handleDownload = () => {
     if (!result) return;
-    const a = document.createElement('a');
-    a.href = result.downloadUrl;
-    a.download = buildResultName(result.originalName, result.format);
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const filename = result.downloadUrl.split('/').pop();
+
+    if (isIOS) {
+      window.open(result.downloadUrl, '_blank');
+    } else {
+      const a = document.createElement('a');
+      a.href = result.downloadUrl;
+      a.download = buildResultName(result.originalName, result.format);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
 
     setTimeout(() => {
-      const filename = result.downloadUrl.split('/').pop();
       fetch(`/api/file/${filename}`, { method: 'DELETE' }).catch(() => {});
     }, 2000);
   };
@@ -219,6 +226,11 @@ export default function Upscaler() {
                   <RefreshCw size={17} />
                 </button>
               </div>
+              {isIOS && (
+                <p className="text-center text-[11px] mt-3" style={{ color: '#A7B0C0' }}>
+                  Нажми и удержи изображение → «Добавить в Фото»
+                </p>
+              )}
             </div>
           ) : (
             /* Settings panel */

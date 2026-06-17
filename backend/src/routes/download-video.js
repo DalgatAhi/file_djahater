@@ -31,9 +31,9 @@ async function getYtDlp() {
 }
 
 const QUALITY_FORMATS = {
-  best:  'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-  '720p': 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best[height<=720]',
-  '480p': 'bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[height<=480][ext=mp4]/best[height<=480]',
+  best:  'bestvideo[vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo+bestaudio/best[ext=mp4]/best',
+  '720p': 'bestvideo[vcodec^=avc1][height<=720]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best[height<=720]/best',
+  '480p': 'bestvideo[vcodec^=avc1][height<=480]+bestaudio[ext=m4a]/bestvideo[height<=480]+bestaudio/best[height<=480]/best',
 };
 
 const jobs = new Map();
@@ -83,6 +83,7 @@ router.post('/download-video', express.json(), async (req, res) => {
     const args = [
       trimmedUrl,
       '-f', fmt,
+      '-S', 'vcodec:h264,ext:mp4',
       '-o', outputPath,
       '--no-playlist',
       '--no-warnings',

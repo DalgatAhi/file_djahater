@@ -23,10 +23,10 @@ function formatBytes(bytes) {
 
 // Top-level section tabs
 const SECTIONS = [
-  { id: 'compress',  label: 'Сжатие',           Icon: Minimize2 },
-  { id: 'upscale',   label: 'Улучшение фото',   Icon: Wand2     },
-  { id: 'removebg',  label: 'Удаление фона',    Icon: Eraser    },
-  { id: 'download',  label: 'Скачать видео',    Icon: Download  },
+  { id: 'compress',  label: 'Сжатие',           Icon: Minimize2, badge: null          },
+  { id: 'upscale',   label: 'Улучшение фото',   Icon: Wand2,     badge: 'на проверке' },
+  { id: 'removebg',  label: 'Удаление фона',    Icon: Eraser,    badge: 'на проверке' },
+  { id: 'download',  label: 'Скачать видео',    Icon: Download,  badge: null          },
 ];
 
 export default function Compressor() {
@@ -123,13 +123,13 @@ export default function Compressor() {
             className="inline-flex items-center p-1 rounded-2xl gap-1"
             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
           >
-            {SECTIONS.map(({ id, label, Icon }) => {
+            {SECTIONS.map(({ id, label, Icon, badge }) => {
               const active = section === id;
               return (
                 <button
                   key={id}
                   onClick={() => handleSectionChange(id)}
-                  className={`flex items-center gap-2 py-2.5 px-6 rounded-xl text-sm font-semibold transition-all duration-250
+                  className={`relative flex items-center gap-2 py-2.5 px-6 rounded-xl text-sm font-semibold transition-all duration-250
                     ${active ? 'text-white' : 'text-muted hover:text-white'}`}
                   style={
                     active
@@ -142,6 +142,14 @@ export default function Compressor() {
                 >
                   <Icon size={15} />
                   {label}
+                  {badge && (
+                    <span
+                      className="absolute -top-2 -right-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide leading-none"
+                      style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.4)' }}
+                    >
+                      {badge}
+                    </span>
+                  )}
                 </button>
               );
             })}

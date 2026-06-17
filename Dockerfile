@@ -2,7 +2,7 @@ FROM node:20-slim
 
 # Нативные зависимости + yt-dlp для скачивания видео
 RUN apt-get update && apt-get install -y \
-    python3 make g++ curl \
+    python3 make g++ curl ffmpeg \
     --no-install-recommends && \
     curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
     -o /usr/local/bin/yt-dlp && chmod +x /usr/local/bin/yt-dlp && \

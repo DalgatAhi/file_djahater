@@ -339,18 +339,24 @@ function DownloadProgress({ progress }) {
 function ResultPanel({ result, onReset }) {
   const { title, fileSize, downloadUrl, quality } = result;
   const qualityLabel = { best: 'Лучшее качество', '720p': '720p HD', '480p': '480p' }[quality] || quality;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
   const handleDownload = () => {
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    const safe = (title || 'video').replace(/[<>:"/\\|?*\x00-\x1F]/g, '').replace(/\s+/g, '_').slice(0, 80);
-    a.download = `${safe}.mp4`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const filename = downloadUrl.split('/').pop();
+
+    if (isIOS) {
+      window.open(downloadUrl, '_blank');
+    } else {
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      const safe = (title || 'video').replace(/[<>:"/\\|?*\x00-\x1F]/g, '').replace(/\s+/g, '_').slice(0, 80);
+      a.download = `${safe}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
 
     setTimeout(() => {
-      const filename = downloadUrl.split('/').pop();
       fetch(`/api/file/${filename}`, { method: 'DELETE' }).catch(() => {});
     }, 2000);
   };
@@ -404,6 +410,11 @@ function ResultPanel({ result, onReset }) {
             <RefreshCw size={17} />
           </button>
         </div>
+        {isIOS && (
+          <p className="text-center text-[11px] mt-3" style={{ color: '#A7B0C0' }}>
+            Нажми и удержи видео → «Сохранить в Фото»
+          </p>
+        )}
       </div>
     </div>
   );

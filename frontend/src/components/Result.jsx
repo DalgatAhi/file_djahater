@@ -21,18 +21,24 @@ export default function Result({ result, onReset, onDownloaded }) {
 
   const { originalName, originalSize, compressedSize, savings, format, downloadUrl } = result;
 
-  const handleDownload = async () => {
-    // Trigger file download
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = buildResultName(originalName, format);
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
-    // Notify server to clean up after a short delay
+  const handleDownload = async () => {
+    const filename = downloadUrl.split('/').pop();
+
+    if (isIOS) {
+      // iOS: open in new tab so user can long-press → Save to Photos
+      window.open(downloadUrl, '_blank');
+    } else {
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = buildResultName(originalName, format);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
     setTimeout(() => {
-      const filename = downloadUrl.split('/').pop();
       fetch(`/api/file/${filename}`, { method: 'DELETE' }).catch(() => {});
       onDownloaded?.();
     }, 2000);
@@ -119,6 +125,11 @@ export default function Result({ result, onReset, onDownloaded }) {
           <RefreshCw size={17} />
         </button>
       </div>
+      {isIOS && (
+        <p className="text-center text-[11px] mt-3" style={{ color: '#A7B0C0' }}>
+          Нажми и удержи изображение → «Добавить в Фото»
+        </p>
+      )}
     </div>
   );
 }
