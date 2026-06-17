@@ -8,7 +8,8 @@ import VideoCompressor from './VideoCompressor';
 import AudioExtractor from './AudioExtractor';
 import Upscaler from './Upscaler';
 import BackgroundRemover from './BackgroundRemover';
-import { X, ImageIcon, Minimize2, Wand2, Eraser, Film, Music } from 'lucide-react';
+import VideoDownloader from './VideoDownloader';
+import { X, ImageIcon, Minimize2, Wand2, Eraser, Film, Music, Download } from 'lucide-react';
 
 const VIDEO_TABS = [
   { id: 'compress', label: 'Сжать видео',   Icon: Film  },
@@ -25,6 +26,7 @@ const SECTIONS = [
   { id: 'compress',  label: 'Сжатие',           Icon: Minimize2 },
   { id: 'upscale',   label: 'Улучшение фото',   Icon: Wand2     },
   { id: 'removebg',  label: 'Удаление фона',    Icon: Eraser    },
+  { id: 'download',  label: 'Скачать видео',    Icon: Download  },
 ];
 
 export default function Compressor() {
@@ -278,6 +280,9 @@ export default function Compressor() {
 
         {/* ── SECTION: Удаление фона ── */}
         {section === 'removebg' && <BackgroundRemover />}
+
+        {/* ── SECTION: Скачать видео ── */}
+        {section === 'download' && <VideoDownloader />}
       </div>
     </section>
   );

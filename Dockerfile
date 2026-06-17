@@ -1,9 +1,14 @@
 FROM node:20-slim
 
-# Нативные зависимости для sharp, canvas и сборки модулей
+# Нативные зависимости + yt-dlp для скачивания видео
 RUN apt-get update && apt-get install -y \
-    python3 make g++ \
-    --no-install-recommends && rm -rf /var/lib/apt/lists/*
+    python3 make g++ curl \
+    --no-install-recommends && \
+    curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
+    -o /usr/local/bin/yt-dlp && chmod +x /usr/local/bin/yt-dlp && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV YTDLP_PATH=yt-dlp
 
 WORKDIR /app
 

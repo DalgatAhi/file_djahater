@@ -5,6 +5,7 @@ const fs = require('fs');
 const compressRoute = require('./src/routes/compress');
 const compressVideoRoute = require('./src/routes/compress-video');
 const extractAudioRoute = require('./src/routes/extract-audio');
+const downloadVideoRoute = require('./src/routes/download-video');
 const upscaleRoute = require('./src/routes/upscale');
 const removeBgRoute = require('./src/routes/remove-background');
 
@@ -34,6 +35,7 @@ app.use('/download', express.static(compressedDir));
 app.use('/api', compressRoute);
 app.use('/api', compressVideoRoute);
 app.use('/api', extractAudioRoute);
+app.use('/api', downloadVideoRoute);
 app.use('/api', upscaleRoute);
 app.use('/api', removeBgRoute);
 
