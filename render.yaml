@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: filelite
+    env: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: YTDLP_PATH
+        value: yt-dlp
