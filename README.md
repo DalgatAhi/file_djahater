@@ -2,6 +2,8 @@
 
 FileLite is a full-stack file utility service for image compression, video compression, audio extraction, video downloads, background removal, and image upscaling.
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://dashboard.render.com/blueprint/new?repo=https%3A%2F%2Fgithub.com%2FDalgatAhi%2Ffile_djahater)
+
 ## Local development
 
 Start the backend:
